@@ -4,6 +4,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.label import Label
 
 
 class HomeScreen(Screen):
@@ -15,7 +16,8 @@ class HomeScreen(Screen):
             ("New Routine", "newRoutine"),
             ("Edit Routine", "editRoutine"),
             ("Get News", "news"),
-            ("Bonus", "bonus")
+            ("Bonus", "bonus"),
+            ("Saved Plan", "savedPlan")  # Przyciski na ekranie głównym
         ]
 
         for label, screen in buttons:
@@ -24,7 +26,7 @@ class HomeScreen(Screen):
                 font_size=30,
                 background_color="grey",
                 background_normal='',
-                size_hint=(1, 1) 
+                size_hint=(1, 1)
             )
             button.bind(on_press=lambda x, s=screen: setattr(self.manager, 'current', s))
             layout.add_widget(button)
@@ -58,14 +60,14 @@ class NewRoutineScreen(Screen):
         self.add_widget(layout)
 
     def create_routine(self, instance):
-        """Funkcja tworząca nową rutynę."""
+        """Funkcja tworząca nową rutynę.""" 
         name = self.name_input.text
         reps = self.reps_input.text
 
         # Validate input and create routine
         if name and reps.isdigit():
             # Przechodzimy do ekranu z potwierdzeniem rutyny
-            self.manager.get_screen('routineConfirmed').display_routine(name, reps)
+            self.manager.get_screen('routineConfirmed').add_exercise(name, reps)
 
             # Przejdź do ekranu z potwierdzeniem rutyny
             self.manager.current = "routineConfirmed"
@@ -88,8 +90,13 @@ class RoutineConfirmedScreen(Screen):
 
         # Button to add a new exercise
         add_button = Button(text="Add New Exercise", size_hint=(1, 0.2), background_color="blue")
-        add_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'newRoutine'))
+        add_button.bind(on_press=self.go_to_new_routine)
         layout.add_widget(add_button)
+
+        # Button to save the plan
+        save_button = Button(text="Save Plan", size_hint=(1, 0.2), background_color="green")
+        save_button.bind(on_press=self.save_plan)
+        layout.add_widget(save_button)
 
         # Add back button to home screen
         back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2))
@@ -98,9 +105,54 @@ class RoutineConfirmedScreen(Screen):
 
         self.add_widget(layout)
 
-    def display_routine(self, name, reps):
-        """Wyświetla szczegóły rutyny na ekranie."""
-        self.routine_label.text = f"Exercise: {name}\nRepetitions: {reps}"
+        # List to store exercises
+        self.exercises = []
+
+    def add_exercise(self, name, reps):
+        """Add a new exercise to the list and update the display."""
+        self.exercises.append(f"Exercise: {name}, Repetitions: {reps}")
+        self.update_routine_display()
+
+    def update_routine_display(self):
+        """Update the display of the routine list."""
+        self.routine_label.text = "\n".join(self.exercises)
+
+    def go_to_new_routine(self, instance):
+        """Switch to NewRoutine screen."""
+        self.manager.current = 'newRoutine'
+
+    def save_plan(self, instance):
+        """Save the routine plan as a text."""
+        # Create the final saved plan as a string
+        saved_plan = "\n".join(self.exercises)  # Store the plan
+        self.exercises = []  # Clear exercises list after saving
+
+        # Save the plan to the HomeScreen
+        self.manager.get_screen('home').saved_plan_text = saved_plan
+
+        # Clear the routine details from this screen
+        self.update_routine_display()
+
+
+class SavedPlanScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
+
+        # Label for displaying the saved plan
+        self.saved_plan_label = TextInput(font_size=20, background_color="black", foreground_color="white", readonly=True)
+        layout.add_widget(self.saved_plan_label)
+
+        # Add back button to home screen
+        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2))
+        back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
+        layout.add_widget(back_button)
+
+        self.add_widget(layout)
+
+    def update_saved_plan_display(self, saved_plan_text):
+        """Update the display of the saved plan."""
+        self.saved_plan_label.text = saved_plan_text
 
 
 class MainApp(App):
@@ -111,6 +163,7 @@ class MainApp(App):
         sm.add_widget(HomeScreen(name="home"))
         sm.add_widget(NewRoutineScreen(name="newRoutine"))
         sm.add_widget(RoutineConfirmedScreen(name="routineConfirmed"))
+        sm.add_widget(SavedPlanScreen(name="savedPlan"))
 
         return sm
 
