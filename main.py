@@ -5,6 +5,7 @@ from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.label import Label
+from kivy.uix.behaviors import ButtonBehavior
 
 
 class HomeScreen(Screen):
@@ -13,20 +14,21 @@ class HomeScreen(Screen):
         layout = GridLayout(cols=1, spacing=10, padding=10)
         
         buttons = [
-            ("New Routine", "newRoutine"),
-            ("Edit Routine", "editRoutine"),
-            ("Get News", "news"),
-            ("Bonus", "bonus"),
-            ("Saved Plan", "savedPlan")  # Przyciski na ekranie głównym
+            ("New Routine", "newRoutine", (0, 0.639, 0.545, 1)),  # Morski zielony
+            ("Edit Routine", "editRoutine", (0.294, 0.663, 0.294, 1)),  # Zielony
+            ("Get News", "news", (1, 0.322, 0.133, 1)),  # Pomarańczowy
+            ("Bonus", "bonus", (0.243, 0.318, 0.712, 1)),  # Niebieski
+            ("Saved Plan", "savedPlan", (0.243, 0.318, 0.712, 1))  # Niebieski
         ]
 
-        for label, screen in buttons:
+        for label, screen, color in buttons:
             button = Button(
                 text=label,
                 font_size=30,
-                background_color="grey",
+                background_color=color,
                 background_normal='',
-                size_hint=(1, 1)
+                size_hint=(1, 1),
+                color=(1, 1, 1, 1)
             )
             button.bind(on_press=lambda x, s=screen: setattr(self.manager, 'current', s))
             layout.add_widget(button)
@@ -44,11 +46,11 @@ class NewRoutineScreen(Screen):
         self.reps_input = TextInput(hint_text="Enter number of repetitions", size_hint=(1, 0.2), input_filter='int')
 
         # Button to create the routine
-        create_button = Button(text="Create Routine", size_hint=(1, 0.2), background_color="green")
+        create_button = Button(text="Create Routine", size_hint=(1, 0.2), background_color=(0, 0.639, 0.545, 1))  # Morski zielony
         create_button.bind(on_press=self.create_routine)
 
         # Back button to home screen
-        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2))
+        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))  # Pomarańczowy
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
 
         # Add widgets to the layout
@@ -89,17 +91,17 @@ class RoutineConfirmedScreen(Screen):
         layout.add_widget(self.routine_label)
 
         # Button to add a new exercise
-        add_button = Button(text="Add New Exercise", size_hint=(1, 0.2), background_color="blue")
+        add_button = Button(text="Add New Exercise", size_hint=(1, 0.2), background_color=(0, 0.482, 0.859, 1))  # Niebieski
         add_button.bind(on_press=self.go_to_new_routine)
         layout.add_widget(add_button)
 
         # Button to save the plan
-        save_button = Button(text="Save Plan", size_hint=(1, 0.2), background_color="green")
+        save_button = Button(text="Save Plan", size_hint=(1, 0.2), background_color=(0.243, 0.318, 0.712, 1))  # Niebieski głęboki
         save_button.bind(on_press=self.save_plan)
         layout.add_widget(save_button)
 
         # Add back button to home screen
-        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2))
+        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))  # Pomarańczowy
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
         layout.add_widget(back_button)
 
@@ -144,7 +146,7 @@ class SavedPlanScreen(Screen):
         layout.add_widget(self.saved_plan_label)
 
         # Add back button to home screen
-        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2))
+        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))  # Pomarańczowy
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
         layout.add_widget(back_button)
 
