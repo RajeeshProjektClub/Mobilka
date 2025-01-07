@@ -1,18 +1,17 @@
+import json
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
 from kivy.uix.screenmanager import Screen, ScreenManager
-from kivy.uix.label import Label
-from kivy.uix.behaviors import ButtonBehavior
 
 
 class HomeScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         layout = GridLayout(cols=1, spacing=10, padding=10)
-        
+
         buttons = [
             ("New Routine", "newRoutine", (0, 0.639, 0.545, 1)),  # Morski zielony
             ("Edit Routine", "editRoutine", (0.294, 0.663, 0.294, 1)),  # Zielony
@@ -68,10 +67,15 @@ class NewRoutineScreen(Screen):
 
         # Validate input and create routine
         if name and reps.isdigit():
-            # Przechodzimy do ekranu z potwierdzeniem rutyny
-            self.manager.get_screen('routineConfirmed').add_exercise(name, reps)
+            # Prepare JSON data
+            routine_data = {
+                "exercise_name": name,
+                "repetitions": int(reps)
+            }
+            self.export_to_json(routine_data)
 
             # Przejdź do ekranu z potwierdzeniem rutyny
+            self.manager.get_screen('routineConfirmed').add_exercise(name, reps)
             self.manager.current = "routineConfirmed"
 
             # Clear the input fields
@@ -79,6 +83,11 @@ class NewRoutineScreen(Screen):
             self.reps_input.text = ""
         else:
             print("Please fill in all fields correctly.")
+
+    def export_to_json(self, data):
+        """Eksportuj dane do JSON i wyświetl w konsoli."""
+        json_output = json.dumps(data, indent=4)
+        print(f"Routine JSON output:\n{json_output}")
 
 
 class RoutineConfirmedScreen(Screen):
@@ -129,33 +138,6 @@ class RoutineConfirmedScreen(Screen):
         saved_plan = "\n".join(self.exercises)  # Store the plan
         self.exercises = []  # Clear exercises list after saving
 
-        # Save the plan to the HomeScreen
-        self.manager.get_screen('home').saved_plan_text = saved_plan
-
-        # Clear the routine details from this screen
-        self.update_routine_display()
-
-
-class SavedPlanScreen(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
-
-        # Label for displaying the saved plan
-        self.saved_plan_label = TextInput(font_size=20, background_color="black", foreground_color="white", readonly=True)
-        layout.add_widget(self.saved_plan_label)
-
-        # Add back button to home screen
-        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))  # Pomarańczowy
-        back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
-        layout.add_widget(back_button)
-
-        self.add_widget(layout)
-
-    def update_saved_plan_display(self, saved_plan_text):
-        """Update the display of the saved plan."""
-        self.saved_plan_label.text = saved_plan_text
-
 
 class MainApp(App):
     def build(self):
@@ -165,7 +147,6 @@ class MainApp(App):
         sm.add_widget(HomeScreen(name="home"))
         sm.add_widget(NewRoutineScreen(name="newRoutine"))
         sm.add_widget(RoutineConfirmedScreen(name="routineConfirmed"))
-        sm.add_widget(SavedPlanScreen(name="savedPlan"))
 
         return sm
 
