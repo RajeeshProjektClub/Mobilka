@@ -14,22 +14,17 @@ class HomeScreen(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation="vertical", spacing=0, padding=0)
 
-        # Add canvas for background color (split into top and bottom sections)
         with self.canvas.before:
-            # Szary kolor na 4/5 wysokości
-            Color(0.1, 0.1, 0.1, 1)  # Ciemnoszary kolor tła
+            Color(0.1, 0.1, 0.1, 1)  # Dark gray
             self.rect_top = Rectangle(size=(self.width, self.height * 0.8), pos=(0, self.height * 0.2))
 
-            # Niebieski kolor na 1/5 wysokości (teraz jaśniejszy niebieski)
-            Color(0.6, 0.8, 1, 1)  # Bardzo jasny niebieski kolor tła
+            Color(0.6, 0.8, 1, 1)  # Light blue
             self.rect_bottom = Rectangle(size=(self.width, self.height * 0.2), pos=(0, 0))
 
-        # Górna część layoutu (niezajmująca miejsca w dolnej sekcji)
-        self.top_layout = BoxLayout(size_hint=(1, 0.8))  # Górna część
+        self.top_layout = BoxLayout(size_hint=(1, 0.8))
         layout.add_widget(self.top_layout)
 
-        # Dolna część layoutu z przyciskami
-        self.bottom_layout = BoxLayout(orientation="horizontal", size_hint=(1, 0.2))  # Dolna część
+        self.bottom_layout = BoxLayout(orientation="horizontal", size_hint=(1, 0.2))
         nav_layout = GridLayout(cols=5, size_hint=(1, 1), spacing=20, padding=10)
 
         buttons = [
@@ -48,7 +43,7 @@ class HomeScreen(Screen):
                 size_hint=(1, 0.3),
                 font_size=12,
                 background_normal='',
-                background_color=(1, 1, 1, 0),  # Customize color as needed
+                background_color=(1, 1, 1, 0),
                 color=(0.1, 0.4, 0.8, 1),
             )
             text_widget.bind(on_press=lambda x, s=screen: setattr(self.manager, 'current', s))
@@ -62,7 +57,6 @@ class HomeScreen(Screen):
         self.add_widget(layout)
 
     def on_size(self, *args):
-        """Update the background size when the screen size changes."""
         self.rect_top.pos = (0, self.height * 0.2)
         self.rect_top.size = (self.width, self.height * 0.8)
 
@@ -75,24 +69,19 @@ class NewRoutineScreen(Screen):
         super().__init__(**kwargs)
         layout = BoxLayout(orientation="vertical", spacing=5, padding=10)
 
-        # Add canvas for background color (dark gray or near black)
         with self.canvas.before:
-            Color(0.1, 0.1, 0.1, 1)  # Ciemnoszary kolor tła
+            Color(0.1, 0.1, 0.1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
-        # Input fields for exercise name and repetitions
         self.name_input = TextInput(hint_text="Enter exercise name", size_hint=(1, 0.2))
         self.reps_input = TextInput(hint_text="Enter number of repetitions", size_hint=(1, 0.2), input_filter='int')
 
-        # Button to create the routine
         create_button = Button(text="Create Routine", size_hint=(1, 0.2), background_color=(0, 0.639, 0.545, 1))
         create_button.bind(on_press=self.create_routine)
 
-        # Back button to home screen
         back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
 
-        # Add widgets to the layout
         layout.add_widget(self.name_input)
         layout.add_widget(self.reps_input)
         layout.add_widget(create_button)
@@ -101,75 +90,135 @@ class NewRoutineScreen(Screen):
         self.add_widget(layout)
 
     def on_size(self, *args):
-        """Update the background size when the screen size changes."""
         self.rect.pos = self.pos
         self.rect.size = self.size
 
     def create_routine(self, instance):
-        """Create a new routine."""
         name = self.name_input.text
         reps = self.reps_input.text
 
         if name and reps.isdigit():
-            # Prepare JSON data
             routine_data = {
                 "exercise_name": name,
                 "repetitions": int(reps)
             }
-            self.export_to_json(routine_data)
-
-            # Clear input fields and navigate
-            self.manager.current = "home"
+            self.manager.get_screen('routineConfirmed').add_exercise(name, reps)
+            self.manager.current = "routineConfirmed"
             self.name_input.text = ""
             self.reps_input.text = ""
         else:
             print("Please fill in all fields correctly.")
 
-    def export_to_json(self, data):
-        """Export routine to JSON and print to console."""
-        json_output = json.dumps(data, indent=4)
-        print(f"Routine JSON output:\n{json_output}")
-
 
 class RoutineConfirmedScreen(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        layout = BoxLayout(orientation="vertical", spacing=5, padding=10)
+        layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
 
-        # Add canvas for background color (dark gray or near black)
         with self.canvas.before:
-            Color(0.1, 0.1, 0.1, 1)  # Ciemnoszary kolor tła
+            Color(0.1, 0.1, 0.1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
-        # Placeholder routine confirmation content
-        routine_label = TextInput(
+        self.routine_label = TextInput(
             font_size=20,
             text="Routine confirmed! Add more features here.",
             readonly=True
         )
-        layout.add_widget(routine_label)
+        layout.add_widget(self.routine_label)
 
-        # Back button to home screen
+        add_button = Button(text="Add New Exercise", size_hint=(1, 0.2), background_color=(0, 0.482, 0.859, 1))
+        add_button.bind(on_press=self.go_to_new_routine)
+        layout.add_widget(add_button)
+
+        save_button = Button(text="Save Plan", size_hint=(1, 0.2), background_color=(0.243, 0.318, 0.712, 1))
+        save_button.bind(on_press=self.save_plan)
+        layout.add_widget(save_button)
+
         back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
         layout.add_widget(back_button)
 
         self.add_widget(layout)
+        self.exercises = []
 
-    def on_size(self, *args):
-        """Update the background size when the screen size changes."""
-        self.rect.pos = self.pos
-        self.rect.size = self.size
+    def add_exercise(self, name, reps):
+        self.exercises.append({"exercise_name": name, "repetitions": reps})
+        self.update_routine_display()
+
+    def update_routine_display(self):
+        display_text = "\n".join([f"Exercise: {e['exercise_name']}, Reps: {e['repetitions']}" for e in self.exercises])
+        self.routine_label.text = display_text
+
+    def go_to_new_routine(self, instance):
+        self.manager.current = 'newRoutine'
+
+    def save_plan(self, instance):
+        if self.exercises:
+            saved_plan = {"plan_name": "", "exercises": self.exercises}
+            plan_name = input("Enter a name for your plan: ")  # Temporary solution for naming plans
+            saved_plan["plan_name"] = plan_name
+
+            self.manager.get_screen('savedPlan').add_saved_plan(saved_plan)
+            self.exercises = []
+            self.update_routine_display()
+
+
+class SavedPlanScreen(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        layout = BoxLayout(orientation="vertical", spacing=10, padding=10)
+
+        with self.canvas.before:
+            Color(0.1, 0.1, 0.1, 1)
+            self.rect = Rectangle(size=self.size, pos=self.pos)
+
+        self.plans_list = BoxLayout(orientation="vertical", spacing=10)
+        layout.add_widget(self.plans_list)
+
+        self.plan_details = TextInput(
+            font_size=16,
+            readonly=True,
+            background_color=(0.2, 0.2, 0.2, 1),
+            foreground_color=(1, 1, 1, 1),
+            size_hint=(1, 0.7)
+        )
+        layout.add_widget(self.plan_details)
+
+        back_button = Button(text="Back to Home Screen", size_hint=(1, 0.1), background_color=(1, 0.322, 0.133, 1))
+        back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
+        layout.add_widget(back_button)
+
+        self.add_widget(layout)
+        self.saved_plans = []
+
+    def add_saved_plan(self, plan):
+        self.saved_plans.append(plan)
+        self.update_saved_plans_display()
+
+    def update_saved_plans_display(self):
+        self.plans_list.clear_widgets()
+        for i, plan in enumerate(self.saved_plans):
+            plan_button = Button(
+                text=f"{plan['plan_name']}",
+                size_hint=(1, None),
+                height=40,
+                background_color=(0.243, 0.318, 0.712, 1)
+            )
+            plan_button.bind(on_press=lambda x, p=plan: self.show_plan_details(p))
+            self.plans_list.add_widget(plan_button)
+
+    def show_plan_details(self, plan):
+        details = json.dumps(plan, indent=4)
+        self.plan_details.text = details
 
 
 class MainApp(App):
     def build(self):
         sm = ScreenManager()
-
-        # Add screens to the ScreenManager
         sm.add_widget(HomeScreen(name="home"))
         sm.add_widget(NewRoutineScreen(name="newRoutine"))
         sm.add_widget(RoutineConfirmedScreen(name="routineConfirmed"))
+        sm.add_widget(SavedPlanScreen(name="savedPlan"))
 
         return sm
 
