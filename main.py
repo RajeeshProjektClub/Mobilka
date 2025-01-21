@@ -237,22 +237,12 @@ class SavedPlanScreen(Screen):
     def update_saved_plans_display(self):
         self.plans_list.clear_widgets()
         for plan in self.saved_plans:
-            plan_button = BoxLayout(orientation="horizontal", size_hint=(1, None), height=40)
-
-            # Plan name label
-            plan_button_label = Button(
+            plan_button = Button(
                 text=plan['plan_name'],
-                size_hint=(0.8, 1),
+                size_hint=(1, None),
                 height=40,
                 background_color=(0.243, 0.318, 0.712, 1)
             )
-            plan_button.add_widget(plan_button_label)
-
-            # If the plan is marked as favorite, show a star icon
-            if plan.get('favorite', False):
-                star_icon = Image(source='star_icon.png', size_hint=(None, None), size=(30, 30))
-                plan_button.add_widget(star_icon)
-            
             plan_button.bind(on_press=lambda x, p=plan: self.show_plan_details(p))
             self.plans_list.add_widget(plan_button)
 
