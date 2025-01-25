@@ -1,4 +1,5 @@
 import json
+import requests
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
@@ -99,10 +100,6 @@ class NewRoutineScreen(Screen):
         reps = self.reps_input.text
 
         if name and reps.isdigit():
-            routine_data = {
-                "exercise_name": name,
-                "repetitions": int(reps)
-            }
             self.manager.get_screen('routineConfirmed').add_exercise(name, reps)
             self.manager.current = "routineConfirmed"
             self.name_input.text = ""
@@ -169,7 +166,6 @@ class NamePlanScreen(Screen):
         self.plan_name_input = TextInput(hint_text="Enter plan name", size_hint=(1, 0.2))
         layout.add_widget(self.plan_name_input)
 
-        # Checkbox for favorite plans
         self.favorite_checkbox = CheckBox(size_hint=(None, None), size=(30, 30))
         favorite_label = Label(text="Mark as Favorite", size_hint=(None, None), size=(150, 30))
 
@@ -186,25 +182,18 @@ class NamePlanScreen(Screen):
 
     def save_plan(self, instance):
         plan_name = self.plan_name_input.text
-        is_favorite = self.favorite_checkbox.active  # Check if the favorite checkbox is selected
+        is_favorite = self.favorite_checkbox.active
 
         if plan_name:
             exercises = self.manager.get_screen('routineConfirmed').get_exercises()
-
-            # Ensure the 'favorite' key is always present (default False if not selected)
             saved_plan = {
                 "plan_name": plan_name,
                 "exercises": exercises,
-                "favorite": is_favorite if is_favorite is not None else False
+                "favorite": is_favorite
             }
-
-            # Add the saved plan to the SavedPlanScreen
             self.manager.get_screen('savedPlan').add_saved_plan(saved_plan)
-
-            # Reset the input fields after saving
             self.plan_name_input.text = ""
             self.favorite_checkbox.active = False
-            
             self.manager.current = 'savedPlan'
 
 
@@ -220,6 +209,10 @@ class SavedPlanScreen(Screen):
         self.plans_list = BoxLayout(orientation="vertical", spacing=10)
         layout.add_widget(self.plans_list)
 
+        fetch_button = Button(text="Fetch Routine Data", size_hint=(1, 0.2), background_color=(0.5, 0.8, 0.5, 1))
+        fetch_button.bind(on_press=self.fetch_routine_data)
+        layout.add_widget(fetch_button)
+
         back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
         layout.add_widget(back_button)
@@ -227,12 +220,29 @@ class SavedPlanScreen(Screen):
         self.add_widget(layout)
         self.saved_plans = []
 
+    def fetch_routine_data(self, instance):
+        url = "http://52.59.255.128:2344/routine"
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                data = response.json()
+                print("Fetched Data:", data)
+                if isinstance(data, list):
+                    for plan in data:
+                        self.add_saved_plan(plan)
+                else:
+                    print("Invalid data format received from API.")
+            else:
+                print(f"Failed to fetch data. Status code: {response.status_code}")
+        except requests.RequestException as e:
+            print(f"An error occurred: {e}")
+
     def add_saved_plan(self, plan):
-        # Ensure the 'favorite' key is in the plan dictionary, defaulting to False if not present
         if 'favorite' not in plan:
             plan['favorite'] = False
         self.saved_plans.append(plan)
         self.update_saved_plans_display()
+        self.save_to_json()
 
     def update_saved_plans_display(self):
         self.plans_list.clear_widgets()
@@ -250,6 +260,26 @@ class SavedPlanScreen(Screen):
         plan_screen = PlanDetailsScreen(name=f"plan_{plan['plan_name']}", plan=plan)
         self.manager.add_widget(plan_screen)
         self.manager.current = plan_screen.name
+
+    def save_to_json(self):
+        data = {
+            "routine": {
+                "exercises": []
+            }
+        }
+        for idx, plan in enumerate(self.saved_plans, start=1):
+            for exercise in plan.get("exercises", []):
+                exercise_data = {
+                    "exercise_number": idx,
+                    "name": exercise.get("exercise_name"),
+                    "reps": exercise.get("repetitions")
+                }
+                data["routine"]["exercises"].append(exercise_data)
+
+        with open("saved_plans.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+        print(json.dumps(data, indent=4))
 
 
 class PlanDetailsScreen(Screen):
