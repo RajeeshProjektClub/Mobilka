@@ -1,0 +1,15 @@
+{
+    "routine": {
+        "exercises": [
+            {
+                "exercise_number": 1,
+                "reps": 10
+            },
+            {
+                "exercise_number": 2,
+                "name": "Squat",
+                "reps": 15
+            }
+        ]
+    }
+}
