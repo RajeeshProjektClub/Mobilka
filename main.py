@@ -194,6 +194,11 @@ class NamePlanScreen(Screen):
             self.manager.get_screen('savedPlan').add_saved_plan(saved_plan)
             self.plan_name_input.text = ""
             self.favorite_checkbox.active = False
+
+            # Reset exercises list after saving the plan
+            self.manager.get_screen('routineConfirmed').exercises = []
+            self.manager.get_screen('routineConfirmed').update_routine_display()
+
             self.manager.current = 'savedPlan'
 
 
@@ -209,10 +214,17 @@ class SavedPlanScreen(Screen):
         self.plans_list = BoxLayout(orientation="vertical", spacing=10)
         layout.add_widget(self.plans_list)
 
-        fetch_button = Button(text="Fetch Routine Data", size_hint=(1, 0.2), background_color=(0.5, 0.8, 0.5, 1))
-        fetch_button.bind(on_press=self.fetch_routine_data)
-        layout.add_widget(fetch_button)
+        # Button to trigger sending data
+        send_button = Button(text="Send Routine Data", size_hint=(1, 0.2), background_color=(0.5, 0.8, 0.5, 1))
+        send_button.bind(on_press=self.send_routine_data)
+        layout.add_widget(send_button)
 
+        # Button to trigger getting saved plans from the server
+        get_button = Button(text="Get Saved Plan", size_hint=(1, 0.2), background_color=(0.5, 0.8, 0.5, 1))
+        get_button.bind(on_press=self.get_saved_plan)  # Trigger fetching saved plan
+        layout.add_widget(get_button)
+
+        # Button to go back to the home screen
         back_button = Button(text="Back to Home Screen", size_hint=(1, 0.2), background_color=(1, 0.322, 0.133, 1))
         back_button.bind(on_press=lambda x: setattr(self.manager, 'current', 'home'))
         layout.add_widget(back_button)
@@ -220,20 +232,33 @@ class SavedPlanScreen(Screen):
         self.add_widget(layout)
         self.saved_plans = []
 
-    def fetch_routine_data(self, instance):
-        url = "http://52.59.255.128:2344/routine"
+    def send_routine_data(self, instance):
+        url = "http://52.59.255.128:2344/routine"  # Updated URL, use your actual API endpoint
+
+        # Prepare the data to be sent in the POST request
+        data = {
+            "routine": {
+                "exercises": []
+            }
+        }
+
+        # Add saved plans' exercises to the data
+        for idx, plan in enumerate(self.saved_plans, start=1):
+            for exercise in plan.get("exercises", []):
+                exercise_data = {
+                    "exercise_number": idx,
+                    "name": exercise.get("exercise_name"),
+                    "reps": exercise.get("repetitions")
+                }
+                data["routine"]["exercises"].append(exercise_data)
+
         try:
-            response = requests.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                print("Fetched Data:", data)
-                if isinstance(data, list):
-                    for plan in data:
-                        self.add_saved_plan(plan)
-                else:
-                    print("Invalid data format received from API.")
+            # Send the POST request
+            response = requests.post(url, json=data)
+            if response.status_code == 201:
+                print("Data successfully sent:", response.json())  # Success, server response
             else:
-                print(f"Failed to fetch data. Status code: {response.status_code}")
+                print(f"Failed to send data. Status code: {response.status_code}")
         except requests.RequestException as e:
             print(f"An error occurred: {e}")
 
@@ -262,11 +287,13 @@ class SavedPlanScreen(Screen):
         self.manager.current = plan_screen.name
 
     def save_to_json(self):
+        # Save data to a JSON file
         data = {
             "routine": {
                 "exercises": []
             }
         }
+
         for idx, plan in enumerate(self.saved_plans, start=1):
             for exercise in plan.get("exercises", []):
                 exercise_data = {
@@ -279,7 +306,33 @@ class SavedPlanScreen(Screen):
         with open("saved_plans.json", "w") as file:
             json.dump(data, file, indent=4)
 
-        print(json.dumps(data, indent=4))
+        print(json.dumps(data, indent=4))  # Print the data to the console
+
+    def get_saved_plan(self, instance):
+        url = "http://52.59.255.128:2344/routine"  # API endpoint to fetch saved plan
+
+        try:
+            # Send GET request to fetch saved plan
+            response = requests.get(url)
+            
+            if response.status_code == 200:
+                saved_plans = response.json()
+
+                # Print the response to inspect its structure
+                print(saved_plans)
+
+                # Assuming the response structure is a list of plans
+                if isinstance(saved_plans, list):
+                    self.saved_plans = saved_plans  # Update the saved plans with fetched data
+                    self.update_saved_plans_display()  # Update the display with fetched plans
+                else:
+                    print("Unexpected response structure:", saved_plans)
+            else:
+                print(f"Failed to fetch saved plans. Status code: {response.status_code}")
+
+        except requests.RequestException as e:
+            print(f"An error occurred while fetching saved plans: {e}")
+
 
 
 class PlanDetailsScreen(Screen):
